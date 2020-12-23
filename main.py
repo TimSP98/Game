@@ -2,35 +2,71 @@ import pygame
 from sys import exit
 from cowboy import Cowboy
 from train import Train
-width,height = 900,600
-players = 5
-pygame.init()
-clock = pygame.time.Clock()
-screen = pygame.display.set_mode((width,height))
-bg_surface = pygame.image.load("./Assets/desert.png").convert()
-bg_surface = pygame.transform.scale(bg_surface,(width,height))
-bois = []
-posX,posY = 20,490
-xd,yd = 160,0
-for i in range(players):
-    posX += xd
-    posY += yd
-    bois.append(Cowboy(posX,posY,flip=True))
-t1 = Train(nWagons=players)
-msCount = 0
-while(True):
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT or event.type == 768:
-            pygame.quit()
-            exit()
+import json
 
-    if msCount == 500:
-        bois[1].flip()
-    screen.blit(bg_surface,(0,0))
-    t1.idle_animate(screen)
-    for i in range(len(bois)):
-        bois[i].idle_animate(screen,msCount)
-    pygame.display.update()
-    msCount +=1
-    msCount %= 10000
-    clock.tick(60)
+
+class Game():
+
+    def __init__(self):
+        with open("settings.json","r") as infile:
+            settings = json.load(infile)
+        for param,val in settings.items():
+            exec("self."+param+"="+str(val))
+        # Assertoins for the game to run
+        assert self.width >= self.height, "Screen not wide enough! Change width in settins.json"
+        assert self.nPlayers > 0, "Need at least 1 Player"
+        assert self.nPlayers < 6, "Too many players, I can't count that many"
+        self.players = []
+        self.train = Train(nWagons=self.nPlayers,screenW = self.width,screenH = self.height)
+        self.clock = pygame.time.Clock()
+        self.screen = pygame.display.set_mode((self.width,self.height))
+        self.bg_surface = pygame.image.load("./Assets/desert.png").convert()
+        self.bg_surface = pygame.transform.scale(self.bg_surface,(self.width,self.height))
+        self.msCount = 0
+        pygame.init()
+
+        self.playerinit()
+        
+
+    def playerinit(self):
+        for i in range(self.nPlayers):
+            CB = Cowboy(place = self.train.wagons[i].bottom,screenW = self.width,screenH = self.height,flip=False)
+            CB.placeRect()
+            
+            self.players.append(CB)
+
+
+    def drawWindow(self):
+        self.screen.blit(self.bg_surface,(0,0))
+        self.train.idle_animate(self.screen)
+        for i in range(len(self.players)):
+            self.players[i].idle_animate(self.screen,self.msCount)
+        pygame.display.update()
+
+
+    def gameloop(self):
+        while(True):
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+            
+            self.drawWindow()
+            
+            self.msCount +=1
+            self.msCount %= 10000
+            self.clock.tick(60)
+
+
+
+    def run(self):
+        self.gameloop()
+
+
+
+def main():
+    game = Game()
+    game.run()
+
+if __name__ == "__main__":
+    main()

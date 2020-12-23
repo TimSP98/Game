@@ -2,10 +2,17 @@ import pygame
 
 class Wagon():
     assetP = "./Assets/Train/"
-    def __init__(self,X,Y,col):
+    def __init__(self,X,Y,col,wWidth,wHeight):
         self.X = X
         self.Y = Y
+        self.width = wWidth
+        self.height = wHeight
+
+        
         self.asset = pygame.image.load(self.assetP+f"sprite_traincars{col}.png")
+        self.asset = pygame.transform.scale(self.asset,(self.width,self.height))
+
+
         self.bottom = self.asset.get_rect()
         pygame.Rect.inflate_ip(self.bottom,-self.bottom.size[0]//3,-5*self.bottom.size[1]//6)
         newX = self.X+self.asset.get_size()[0]//6
