@@ -19,7 +19,7 @@ class Game():
         self.players = []
         self.train = Train(nWagons=self.nPlayers,screenW = self.width,screenH = self.height)
         self.clock = pygame.time.Clock()
-        self.screen = pygame.display.set_mode((self.width,self.height))
+        self.screen = pygame.display.set_mode((self.width,self.height),pygame.RESIZABLE)
         self.bg_surface = pygame.image.load("./Assets/desert.png").convert()
         self.bg_surface = pygame.transform.scale(self.bg_surface,(self.width,self.height))
         self.msCount = 0
@@ -31,7 +31,6 @@ class Game():
     def playerinit(self):
         for i in range(self.nPlayers):
             CB = Cowboy(place = self.train.wagons[i].bottom,screenW = self.width,screenH = self.height,flip=False)
-            CB.placeRect()
             
             self.players.append(CB)
 
@@ -43,19 +42,37 @@ class Game():
             self.players[i].idle_animate(self.screen,self.msCount)
         pygame.display.update()
 
+    def resizeWindow(self,width,height):
+        self.bg_surface = pygame.image.load("./Assets/desert.png").convert()
+        self.bg_surface = pygame.transform.scale(self.bg_surface , (width,height))
+        self.train.resize(width,height)
+        for i in range(self.nPlayers):
+            self.players[i].resize(width,height)
+
+
+    def eventChecker(self):
+        run = True
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            if event.type == pygame.VIDEORESIZE:
+                print(event.dict['size'])
+                self.resizeWindow(event.dict['size'][0],event.dict['size'][1])
+
+        return run
 
     def gameloop(self):
-        while(True):
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    exit()
+        run = True
+        while(run):
+            
+            run = self.eventChecker()
             
             self.drawWindow()
             
             self.msCount +=1
             self.msCount %= 10000
             self.clock.tick(60)
+        pygame.quit()
 
 
 
