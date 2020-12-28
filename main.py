@@ -1,4 +1,5 @@
 import pygame
+from pygame import locals as pgvar
 from sys import exit
 from cowboy import Cowboy
 from train import Train
@@ -15,9 +16,9 @@ class Game():
         # Assertoins for the game to run
         assert self.width >= self.height, "Screen not wide enough! Change width in settins.json"
         assert self.nPlayers > 0, "Need at least 1 Player"
-        assert self.nPlayers < 6, "Too many players, I can't count that many"
+        assert self.nPlayers < 7, "Too many players, I can't count that many"
         self.players = []
-        self.train = Train(nWagons=self.nPlayers,screenW = self.width,screenH = self.height)
+        self.train = Train(nWagons=self.nPlayers+1,screenW = self.width,screenH = self.height)
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((self.width,self.height),pygame.RESIZABLE)
         self.bg_surface = pygame.image.load("./Assets/desert.png").convert()
@@ -29,9 +30,9 @@ class Game():
         
 
     def playerinit(self):
-        for i in range(self.nPlayers):
-            CB = Cowboy(place = self.train.wagons[i].bottom,screenW = self.width,screenH = self.height,flip=False)
-            
+        for i in range(1,self.nPlayers+1):
+            CB = Cowboy(wagonI = i,screenW = self.width,screenH = self.height,flip=False,trainP = self.train)
+            self.train.wagons[i].amountBot +=1
             self.players.append(CB)
 
 
@@ -42,12 +43,12 @@ class Game():
             self.players[i].idle_animate(self.screen,self.msCount)
         pygame.display.update()
 
-    def resizeWindow(self,width,height):
+    def resizeWindow(self):
         self.bg_surface = pygame.image.load("./Assets/desert.png").convert()
-        self.bg_surface = pygame.transform.scale(self.bg_surface , (width,height))
-        self.train.resize(width,height)
+        self.bg_surface = pygame.transform.scale(self.bg_surface , (self.width,self.height))
+        self.train.resize(self.width,self.height)
         for i in range(self.nPlayers):
-            self.players[i].resize(width,height)
+            self.players[i].resize(self.width,self.height)
 
 
     def eventChecker(self):
@@ -56,9 +57,22 @@ class Game():
             if event.type == pygame.QUIT:
                 run = False
             if event.type == pygame.VIDEORESIZE:
-                print(event.dict['size'])
-                self.resizeWindow(event.dict['size'][0],event.dict['size'][1])
+                self.width = event.dict['size'][0]
+                self.height = event.dict['size'][1]
+                self.resizeWindow()
 
+            if event.type == pygame.KEYUP:
+                if event.key == pgvar.K_ESCAPE:
+                    run = False
+
+                if event.key == pgvar.K_j:
+                    self.players[0].jump()
+
+                if event.key == pgvar.K_m:
+                    self.players[0].move()
+
+                if event.key == pgvar.K_t:
+                    self.players[0].turn()
         return run
 
     def gameloop(self):
@@ -68,22 +82,33 @@ class Game():
             run = self.eventChecker()
             
             self.drawWindow()
+
+            self.train.assertions(self.nPlayers)
             
             self.msCount +=1
             self.msCount %= 10000
             self.clock.tick(60)
+        
         pygame.quit()
 
-
+    def close(self):
+        with open("settings.json","r") as infile:
+            settings = json.load(infile)
+        settings["height"] = self.height
+        settings["width"] = self.width
+        with open("settings.json","w") as outfile:
+            json.dump(settings,outfile,indent=2)
 
     def run(self):
         self.gameloop()
 
 
 
+
 def main():
     game = Game()
     game.run()
+    game.close()
 
 if __name__ == "__main__":
     main()

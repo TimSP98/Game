@@ -10,14 +10,17 @@ class Train():
         self.size = 0
         self.head = pygame.image.load(self.assetP+"train.png")
         self.nWagons = nWagons
-        self.wagons = [Wagon(col=i) for i in range(nWagons)]
+        self.wagons = [Wagon(col=i%5) for i in range(nWagons)]
 
-        print(screenW,screenH)
         self.resize(screenW,screenH)
-        print("si",self.size)
 
 
-
+    def assertions(self,playersLeft):
+        tot = 0
+        for i in range(self.nWagons):
+            tot += self.wagons[i].amountTop
+            tot += self.wagons[i].amountBot
+        assert tot == playersLeft, f"There are supposed to be {playersLeft} but I counted {tot} players"
     
 
     def idle_animate(self,screen):
@@ -31,9 +34,7 @@ class Train():
     def resize(self,width,height):
         self.head = pygame.image.load(self.assetP+"train.png")
         # Wagon Head
-        print(width,height)
         self.size = height//2
-        print(self.size)
         self.head = pygame.transform.scale(self.head,(self.size,self.size))
         self.headY = height//2
 

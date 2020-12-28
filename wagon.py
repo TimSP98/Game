@@ -8,14 +8,18 @@ class Wagon():
         self.width = 0
         self.height = 0
         self.col = col
+        self.amountBot = 0
+        self.amountTop = 0
         self.asset = pygame.image.load(self.assetP+f"sprite_traincars{col}.png")
         self.bottom = self.asset.get_rect()
-        
+        self.top = self.asset.get_rect()
 
 
     def animate(self,screen):
         screen.blit(self.asset,(self.X,self.Y))
-        pygame.draw.rect(screen,(255,0,0),self.bottom)
+       # pygame.draw.rect(screen,(255,0,0),self.bottom)
+        #spygame.draw.rect(screen,(0,255,0),self.top)
+        
 
 
     def resize(self,X,Y,wagonW,wagonH):
@@ -26,9 +30,11 @@ class Wagon():
         self.height =wagonH
         self.asset = pygame.transform.scale(self.asset,(self.width,self.height))
 
-        top , left = self.X+self.width//5 , self.Y + 3.9*self.height//6
-        bottomW , bottomH = self.width-(1.15*self.width//3) , self.height-5*self.height//6
+        left , top = self.X+self.width//5 , self.Y + 3.9*self.height//6
+        boxW , boxH = self.width-(1.15*self.width//3) , self.height-9*self.height//10
+        
+        pygame.Rect.update(self.bottom,(left,top) , (boxW,boxH))
 
-        pygame.Rect.update(self.bottom,(top,left) , (bottomW,bottomH))
+        left , top = self.X+self.width//5 , self.Y+int(1.1*self.height//8)
+        pygame.Rect.update(self.top,(left,top) , (boxW,boxH))
 
-        pass
