@@ -30,11 +30,21 @@ class Game():
         
 
     def playerinit(self):
+        # Sets some instance variables, unfortunately not class variables
+        setattr(Cowboy,'_gameP',self)
+        setattr(Cowboy,"_trainP",self.train)
+        setattr(Cowboy,"screenW",self.width)
+        setattr(Cowboy,"screenH",self.height)
+
         for i in range(1,self.nPlayers+1):
-            CB = Cowboy(wagonI = i,screenW = self.width,screenH = self.height,flip=False,trainP = self.train)
-            self.train.wagons[i].amountBot +=1
+            CB = Cowboy(wagonI = i,flip=False)
+            self.train.wagons[i].amountBot.append(CB)
             self.players.append(CB)
 
+    def killPlayer(self,player : Cowboy):
+        obj = self.players.pop(self.players.index(player))
+        del obj
+        self.nPlayers -=1
 
     def drawWindow(self):
         self.screen.blit(self.bg_surface,(0,0))

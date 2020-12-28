@@ -18,8 +18,8 @@ class Train():
     def assertions(self,playersLeft):
         tot = 0
         for i in range(self.nWagons):
-            tot += self.wagons[i].amountTop
-            tot += self.wagons[i].amountBot
+            tot += len(self.wagons[i].amountTop)
+            tot += len(self.wagons[i].amountBot)
         assert tot == playersLeft, f"There are supposed to be {playersLeft} but I counted {tot} players"
     
 

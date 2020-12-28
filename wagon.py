@@ -8,8 +8,8 @@ class Wagon():
         self.width = 0
         self.height = 0
         self.col = col
-        self.amountBot = 0
-        self.amountTop = 0
+        self.amountBot = [] # list of cowboy objects
+        self.amountTop = [] # list of cowboy objects
         self.asset = pygame.image.load(self.assetP+f"sprite_traincars{col}.png")
         self.bottom = self.asset.get_rect()
         self.top = self.asset.get_rect()

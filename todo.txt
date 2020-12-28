@@ -1,1 +1,2 @@
  - Make AmountBot/Top to a list with references to players
+ - Make a die function that tells game object that a player has died
