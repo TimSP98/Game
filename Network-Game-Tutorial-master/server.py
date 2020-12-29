@@ -4,7 +4,7 @@ import sys
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-server = '192.168.0.212'
+server = 'localhost'
 port = 5555
 
 server_ip = socket.gethostbyname(server)
@@ -20,12 +20,17 @@ print("Waiting for a connection")
 
 currentId = "0"
 pos = ["0:50,50", "1:100,100"]
+connectedPlayers = 0
 def threaded_client(conn):
-    global currentId, pos
+    global currentId, pos,connectedPlayers
     conn.send(str.encode(currentId))
     currentId = "1"
     reply = ''
+    
     while True:
+        if connectedPlayers != 2:
+            continue
+
         try:
             data = conn.recv(2048)
             reply = data.decode('utf-8')
@@ -54,5 +59,5 @@ def threaded_client(conn):
 while True:
     conn, addr = s.accept()
     print("Connected to: ", addr)
-
+    connectedPlayers +=1
     start_new_thread(threaded_client, (conn,))

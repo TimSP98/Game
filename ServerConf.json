@@ -1,0 +1,5 @@
+{
+    "nPlayers" : 2,
+    "serverip" : "localhost",
+    "serverPort": 5555
+}
