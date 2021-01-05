@@ -1,7 +1,7 @@
 from game import Game
 
 def main():
-    game = Game()
+    game = Game(single=True)
     game.run()
     game.close()
 

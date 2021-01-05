@@ -32,34 +32,27 @@ class Cowboy():
         self.right = abs(self.right-1)
         self.X += 15 if self.right else -15
     
-    def placeRect(self):
-        place = self._trainP.wagons[self.wagonI]
-        if (self.top):
-            self.Y = place.top.top
-            self.Y -= self.height
-
-            self.X = (place.top.left + place.top.right)//2
-            self.X -= (self.width)//3
-
-
-        else:
-            self.Y = place.bottom.top
-            self.Y -= self.height
-
-            self.X = (place.bottom.left + place.bottom.right)//2
-            self.X -= (self.width)//3
+        
+    def place(self,x,y):
+        """
+        x : int
+        y : int
+        - Coordinate of center of feet
+        """
+        self.X = x-self.width//2
+        self.Y = y-self.height
 
     def resize(self,screenW,screenH):
         self.idleNG = [pygame.image.load(self.assetP+f"Cowboy4_idle_without_gun_{i}.png") for i in range(4)]
-        self.height = screenH//6
+        self.height = screenH//8
         self.width = self.height
-        self.screenW = screenW
-        self.screenH = screenH
         
         for i in range(len(self.idleNG)):
             self.idleNG[i] = pygame.transform.scale(self.idleNG[i],(self.width,self.height))
         
-        self.placeRect()
+        for i in range(len(self._trainP.wagons)):
+            self._trainP.wagons[i].placeCB(True)
+            self._trainP.wagons[i].placeCB(False)
 
     def getlsP(self,I = None):
         # Create the correct list pointers depending on which level
@@ -88,11 +81,11 @@ class Cowboy():
                 lsTop.insert(0,self)
             else:
                 lsTop.append(self)
+        
+        self._trainP.wagons[self.wagonI].placeCB(True)
+        self._trainP.wagons[self.wagonI].placeCB(False)
 
         self.top = abs(self.top - 1)
-
-
-        self.placeRect()
 
 
     def move(self,shot= False,right = True):
@@ -114,12 +107,18 @@ class Cowboy():
         lsCurrent = self.getlsP()
         lsNext = self.getlsP(newI)
         
-        # Switches
+        # Removes from current
         lsCurrent.pop(lsCurrent.index(self))
-        lsNext.append(self)    
-        self.wagonI = newI
+        self._trainP.wagons[self.wagonI].placeCB(self.top)
 
-        self.placeRect()
+        # Adds to new place
+        if(right):
+            lsNext.insert(0,self)
+        else:
+            lsNext.append(self)
+        self.wagonI = newI
+        self._trainP.wagons[self.wagonI].placeCB(self.top)    
+
         
     def turn(self):
         self.flip()

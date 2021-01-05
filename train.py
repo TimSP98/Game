@@ -31,12 +31,12 @@ class Train():
             self.wagons[i].animate(screen)
 
 
-    def resize(self,width,height):
+    def resize(self,screenW,screenH):
         self.head = pygame.image.load(self.assetP+"train.png")
         # Wagon Head
-        self.size = height//2
+        self.size = screenH//3
         self.head = pygame.transform.scale(self.head,(self.size,self.size))
-        self.headY = height//2
+        self.headY = 2*screenH//3
 
         # First wagon
         X = int(self.headX+self.size*0.85)

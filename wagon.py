@@ -21,6 +21,31 @@ class Wagon():
         #spygame.draw.rect(screen,(0,255,0),self.top)
         
 
+    def placeCB(self,top):
+        """
+        top : bool
+        - indicates whether the top/bot should be replaced
+
+        returns : None
+        """
+        if(top):
+            numCB = len(self.amountTop)
+            if(numCB == 0):
+                return
+            frac = 1//numCB
+            baseX = self.top.left
+            for i in range(numCB):
+                self.amountTop[i].place(x=baseX+(i+1)*frac,y=self.top.top)
+        else:
+            numCB = len(self.amountBot)
+            if(numCB == 0):
+                return
+            stepSize = self.bottom.width*1//(numCB+1)
+            baseX = self.bottom.left
+            for i in range(numCB):
+                self.amountBot[i].place(x=baseX+(i+1)*stepSize,y=self.bottom.top)
+        
+        
 
     def resize(self,X,Y,wagonW,wagonH):
         self.asset = pygame.image.load(self.assetP+f"sprite_traincars{self.col}.png")
