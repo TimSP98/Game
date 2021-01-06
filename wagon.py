@@ -32,10 +32,10 @@ class Wagon():
             numCB = len(self.amountTop)
             if(numCB == 0):
                 return
-            frac = 1//numCB
+            stepSize = self.top.width*1//(numCB+1)
             baseX = self.top.left
             for i in range(numCB):
-                self.amountTop[i].place(x=baseX+(i+1)*frac,y=self.top.top)
+                self.amountTop[i].place(x=baseX+(i+1)*stepSize,y=self.top.top)
         else:
             numCB = len(self.amountBot)
             if(numCB == 0):

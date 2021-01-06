@@ -23,7 +23,7 @@ class Train():
         assert tot == playersLeft, f"There are supposed to be {playersLeft} but I counted {tot} players"
     
 
-    def idle_animate(self,screen):
+    def animate(self,screen):
         #Draws the train head
         screen.blit(self.head,(self.headX,self.headY),(0,0,self.size,int(self.size-self.size*0.3)))
         # Draws all the wagons

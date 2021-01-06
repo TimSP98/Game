@@ -46,12 +46,13 @@ class Game():
         self.chooseState = 1
         self.playerinit()
         self.cardsinit()
-        self.actionQ = [("1","Jump")]
+        self.actionQ = [("2","Turn")]
+        #[("1","Move"),("3","Turn"),("3","Move"),("4","Turn"),("4","move"),("4","move"),("5","Turn"),("5","move"),("5","move"),("5","move"),("2","Jump"),("2","Jump")]
         self.wait = 0
 
         # Init for displaying text
         pygame.font.init()
-        self.myfont = pygame.font.SysFont("Comic Sans MS",30)
+        self.myfont = pygame.font.SysFont("Comic Sans MS",40)
 
         print("INIT FINSHED")
     
@@ -72,8 +73,8 @@ class Game():
 
         for i in range(1,self.nPlayers+1):
             CB = Cowboy(wagonI = i,flip=False)
-            self.train.wagons[i].amountBot.append(CB)
             self.players.append(CB)
+        self.placeCowboys()
 
     def killPlayer(self,player : Cowboy):
         obj = self.players.pop(self.players.index(player))
@@ -81,53 +82,48 @@ class Game():
         self.alive = 0
         self.nPlayers -=1
 
+    def placeCowboys(self):
+        for i in range(len(self.train.wagons)):
+            self.train.wagons[i].placeCB(True)
+            self.train.wagons[i].placeCB(False)
 
-    def PlayerAction(self):
-        player = int(self.nextAction[0])
-        action = self.nextAction[1].lower()
-        exec(f"self.players[player-1].{action}()")
-        #self.players[self.id-1].jump()
-        print("executed",player-1,action)
-        self.wait = 120
-        self.nextAction = None
+    def createText(self,text):
+        self.textsurface = self.myfont.render(text,False,(0,0,0))
+    
+    def deleteText(self):
         del self.textsurface
 
+    def playerAction(self,nextAction):
+        """
+        nextAction : tuple[string,string]
+        - Cotains at index=0 the playerID, and at index=1 the action to be performed
+        """
+        player = int(nextAction[0])
+        action = nextAction[1].lower()
+        exec(f"self.players[player-1].{action}()")
+        print("executed",player,action)
 
     def NextAction(self):
-        #Checks whether there are any more actions to perform
-        # if not we enter chooseState
-        if(not self.actionQ):
-            self.PlayerAction()
-            self.chooseState = 1
-            self.nextAction = None
-            return
-        #It's actually a stack, hehe
-        if(self.nextAction != None):
-            self.PlayerAction()
-            return
-        self.nextAction = self.actionQ.pop(0)
-        displayString = f"Player {self.nextAction[0]} {self.nextAction[1]}s"
-        self.textsurface = self.myfont.render(displayString,False,(0,0,0))
-        
-
-    def drawWindow(self):
+        while(len(self.actionQ) > 0):
+            # Loads next action to be done
+            nextAction = self.actionQ.pop(0)
+            # Displays what the next action is and who does it
+            # Displays for 180 ticks (3s)
+            text = f"Player {nextAction[0]} {nextAction[1]}s"
+            self.createText(text = text)
+            self.waitLoop(180)
+            self.deleteText()
+            # Performs the action and waits 120 ticks (2s)
+            self.playerAction(nextAction = nextAction)
+            self.waitLoop(120)
+        self.chooseState = 1
+    
+    def baseDrawWindow(self):
         self.screen.blit(self.bg_surface,(0,0))
-        self.train.idle_animate(self.screen)
+        self.train.animate(self.screen)
         for i in range(len(self.players)):
-            self.players[i].idle_animate(self.screen,self.msCount)
-        #if we are in the option state
-        if (self.wait != 0):
-            self.wait = max(self.wait-1,0)
-            pygame.display.update()
-            return
-        if(self.chooseState):
-            for i in range(4):
-                self.cards[i].animate(self.screen,self.msCount)
-        else:
-            #Action state
-            if(self.msCount % 180 == 0):
-                self.NextAction()
-
+            self.players[i].animate(self.screen,self.msCount)
+    
         try:
             #If variabel exists
             X = self.width//2 - self.textsurface.get_width()//2
@@ -136,19 +132,41 @@ class Game():
         except AttributeError:
             pass
 
+    def drawWindow(self,wait = False):
+        """
+        wait : bool
+        - True if only base should be drawed
+        """
+        self.baseDrawWindow()
+        if(wait):
+            pygame.display.update()
+            return
+        #if we are in the option state
+        if(self.chooseState and self.alive):
+            for i in range(4):
+                self.cards[i].animate(self.screen,self.msCount)
+        else:
+            #Action state
+            if(self.msCount % 180 == 0):
+                self.NextAction()
                 
         pygame.display.update()
 
     def resizeWindow(self):
+        print("Resized Window",self.width,self.height)
         self.bg_surface = pygame.image.load("./Assets/desert.png").convert()
         self.bg_surface = pygame.transform.scale(self.bg_surface , (self.width,self.height))
         self.train.resize(self.width,self.height)
         for i in range(self.nPlayers):
+            print("Resized player",i+1)
             self.players[i].resize(self.width,self.height)
         
+        self.placeCowboys()
+
         if(self.chooseState):
             for i in range(len(self.cards)):
                 self.cards[i].resize(self.width,self.height)
+        
 
     def gameInteraction(self,event):
         x,y = pygame.mouse.get_pos()
@@ -157,7 +175,7 @@ class Game():
                 self.cards[i].checkmousePos(x,y)
             
         if event.type == pygame.KEYUP:
-            if event.key == pygame.K_s:
+            if event.key == pygame.K_q:
                 self.chooseState = abs(self.chooseState-1)
 
             if event.key == pgvar.K_ESCAPE:
@@ -171,6 +189,10 @@ class Game():
 
             if event.key == pgvar.K_t:
                 self.players[self.id-1].turn()
+
+            if event.key == pgvar.K_s:
+                self.players[self.id-1].shoot()
+    
     def eventChecker(self):
         run = True
         for event in pygame.event.get():
@@ -184,11 +206,21 @@ class Game():
                 self.gameInteraction(event)
             
         return run
+    
+    def waitLoop(self,waitTicks):
+        self.wait = waitTicks
+        while(self.wait != 0):
+            self.drawWindow(wait=True)
+            self.msCount +=1
+            self.msCount %= 10000
+            self.clock.tick(60)
+            self.wait -= 1
+        return
+
 
     def gameloop(self):
         run = True
         while(run):
-            
             run = self.eventChecker()
 
             
