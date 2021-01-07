@@ -4,6 +4,7 @@ from sys import exit
 from cowboy import Cowboy
 from train import Train
 from card import Card
+from button import Button
 from network import Network
 import json
 
@@ -44,18 +45,28 @@ class Game():
         pygame.init()
         self.alive = 1
         self.chooseState = 1
+
         self.playerinit()
         self.cardsinit()
+        self.buttoninit()
+
+        self.chosenCardCount = 0
         self.actionQ = [("2","Turn")]
         #[("1","Move"),("3","Turn"),("3","Move"),("4","Turn"),("4","move"),("4","move"),("5","Turn"),("5","move"),("5","move"),("5","move"),("2","Jump"),("2","Jump")]
         self.wait = 0
+        self.drag = False
 
         # Init for displaying text
         pygame.font.init()
-        self.myfont = pygame.font.SysFont("Comic Sans MS",40)
-
+        self.myfont = pygame.font.SysFont("Comic Sans MS",100)
+        self.resizeWindow()
         print("INIT FINSHED")
     
+    def buttoninit(self):
+        setattr(Button,"_gameP",self)
+        setattr(Button,"screenW",self.width)
+        setattr(Button,"screenH",self.height)
+        self.submitButton = Button(action = "Submit")
 
     def cardsinit(self):
         setattr(Card,'_gameP',self)
@@ -78,8 +89,9 @@ class Game():
 
     def killPlayer(self,player : Cowboy):
         obj = self.players.pop(self.players.index(player))
+        if(self.id == obj.playerID):
+            self.alive = 0
         del obj
-        self.alive = 0
         self.nPlayers -=1
 
     def placeCowboys(self):
@@ -87,11 +99,18 @@ class Game():
             self.train.wagons[i].placeCB(True)
             self.train.wagons[i].placeCB(False)
 
-    def createText(self,text):
+    def displayGameText(self,text,time):
+        """
+        text : string
+        - The string to be displayed on the screen
+
+        time : int
+        - Amount of game ticks that the text should be displayed
+        """
         self.textsurface = self.myfont.render(text,False,(0,0,0))
-    
-    def deleteText(self):
+        self.waitLoop(time)
         del self.textsurface
+
 
     def playerAction(self,nextAction):
         """
@@ -100,19 +119,25 @@ class Game():
         """
         player = int(nextAction[0])
         action = nextAction[1].lower()
-        exec(f"self.players[player-1].{action}()")
-        print("executed",player,action)
+        pi = -1
+        for i in range(len(self.players)):
+            if(self.players[i].playerID == player):
+                pi = i
+                break
+        if(pi != -1):
+            exec(f"self.players[{pi}].{action}()")
+        else:
+            text = f"Player {player} is unfortunately dead"
+            self.displayGameText(text = text,time = 120)
 
-    def NextAction(self):
+    def actionExec(self):
         while(len(self.actionQ) > 0):
             # Loads next action to be done
             nextAction = self.actionQ.pop(0)
             # Displays what the next action is and who does it
             # Displays for 180 ticks (3s)
             text = f"Player {nextAction[0]} {nextAction[1]}s"
-            self.createText(text = text)
-            self.waitLoop(180)
-            self.deleteText()
+            self.displayGameText(text = text,time = 180)
             # Performs the action and waits 120 ticks (2s)
             self.playerAction(nextAction = nextAction)
             self.waitLoop(120)
@@ -145,35 +170,52 @@ class Game():
         if(self.chooseState and self.alive):
             for i in range(4):
                 self.cards[i].animate(self.screen,self.msCount)
-        else:
+            self.submitButton.animate(self.screen)
+        elif(not self.chooseState):
             #Action state
             if(self.msCount % 180 == 0):
-                self.NextAction()
+                self.actionExec()
                 
         pygame.display.update()
 
+    def chooseCard(self,card):
+        if(card.chosen):
+            #unChoose
+            for i in range(4):
+                if(self.cards[i] != card and self.cards[i].chosen and self.cards[i].num > card.num):
+                    self.cards[i].select(num = self.cards[i].num-1)
+            
+            card.unselect()
+            self.chosenCardCount -= 1
+        else:
+            # Choose
+            if(self.chosenCardCount == 3):
+                return
+            self.chosenCardCount += 1
+            card.select(num = self.chosenCardCount)
+
+    def moveScreen(self):
+        x,y = pygame.mouse.get_pos()
+        diff = x-self.lastMouseX
+        self.lastMouseX = x
+        self.train.moveX(change = diff)
+        self.placeCowboys()
+        
     def resizeWindow(self):
-        print("Resized Window",self.width,self.height)
         self.bg_surface = pygame.image.load("./Assets/desert.png").convert()
         self.bg_surface = pygame.transform.scale(self.bg_surface , (self.width,self.height))
-        self.train.resize(self.width,self.height)
+        self.train.resize(self.width,self.height,scale = self.scale)
         for i in range(self.nPlayers):
-            print("Resized player",i+1)
-            self.players[i].resize(self.width,self.height)
+            self.players[i].resize(self.width,self.height,self.scale)
         
         self.placeCowboys()
 
         if(self.chooseState):
             for i in range(len(self.cards)):
                 self.cards[i].resize(self.width,self.height)
+            self.submitButton.resize(self.width,self.height)
         
-
     def gameInteraction(self,event):
-        x,y = pygame.mouse.get_pos()
-        if(self.chooseState):
-            for i in range(4):
-                self.cards[i].checkmousePos(x,y)
-            
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_q:
                 self.chooseState = abs(self.chooseState-1)
@@ -196,33 +238,73 @@ class Game():
     def eventChecker(self):
         run = True
         for event in pygame.event.get():
+            x,y = pygame.mouse.get_pos()
             if event.type == pygame.QUIT or (event.type == pygame.KEYUP and event.key == pgvar.K_ESCAPE):
                 run = False
             if event.type == pygame.VIDEORESIZE:
                 self.width = event.dict['size'][0]
                 self.height = event.dict['size'][1]
                 self.resizeWindow()
-            if (self.alive):
+            if (event.type == pygame.MOUSEBUTTONDOWN):
+                if(event.button == 4):
+                    #scroll up
+                    self.scale = self.scale + self.scale/10
+                    self.resizeWindow()
+                if(event.button == 5):
+                    #scroll down
+                    self.scale = self.scale - self.scale/10
+                    self.resizeWindow()
+                if(y>= self.height//2 and event.button == 1):
+                    self.drag = True
+                    self.lastMouseX = x
+
+            if (event.type == pygame.MOUSEBUTTONUP):
+                if(self.drag and event.button == 1):
+                    self.drag = False
+                elif(self.chooseState and event.button == 1):
+                    # We are in chooseState, left button is released
+                    # and self.drag == False
+                    for i in range(4):
+                        chosenCard = None
+                        if(self.cards[i].ishovering(x,y)):
+                            chosenCard = self.cards[i]
+                            break
+                    if(chosenCard != None):
+                        self.chooseCard(card = chosenCard)
+                
+            if(self.chooseState and self.alive):
+                for i in range(4):
+                    self.cards[i].checkmousePos(x,y)
+
+            if (self.alive and self.wait == 0):
                 self.gameInteraction(event)
             
         return run
     
     def waitLoop(self,waitTicks):
         self.wait = waitTicks
-        while(self.wait != 0):
+        while(self.wait != 0 and self.run):
+            self.run = self.eventChecker()
+
+            if(self.drag):
+                self.moveScreen()
+
+            self.train.assertions(self.nPlayers)
             self.drawWindow(wait=True)
+
             self.msCount +=1
             self.msCount %= 10000
             self.clock.tick(60)
             self.wait -= 1
         return
 
-
     def gameloop(self):
-        run = True
-        while(run):
-            run = self.eventChecker()
+        self.run = True
+        while(self.run):
+            self.run = self.eventChecker()
 
+            if(self.drag):
+                self.moveScreen()
             
             self.drawWindow()
 
@@ -239,6 +321,7 @@ class Game():
             settings = json.load(infile)
         settings["height"] = self.height
         settings["width"] = self.width
+        settings["scale"] = self.scale
         with open("PlayerConf.json","w") as outfile:
             json.dump(settings,outfile,indent=2)
 

@@ -22,6 +22,14 @@ class Train():
             tot += len(self.wagons[i].amountBot)
         assert tot == playersLeft, f"There are supposed to be {playersLeft} but I counted {tot} players"
     
+    def moveX(self,change):
+        """
+        change : int
+        - Specifies how far to change and direction (+ or -)
+        """
+        self.headX += change
+        for i in range(len(self.wagons)):
+            self.wagons[i].moveX(change = change)
 
     def animate(self,screen):
         #Draws the train head
@@ -31,12 +39,12 @@ class Train():
             self.wagons[i].animate(screen)
 
 
-    def resize(self,screenW,screenH):
+    def resize(self,screenW,screenH,scale=1.0):
         self.head = pygame.image.load(self.assetP+"train.png")
         # Wagon Head
-        self.size = screenH//3
+        self.size = int((screenH//3)*scale)
         self.head = pygame.transform.scale(self.head,(self.size,self.size))
-        self.headY = 2*screenH//3
+        self.headY = screenH-self.size
 
         # First wagon
         X = int(self.headX+self.size*0.85)

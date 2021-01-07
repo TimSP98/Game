@@ -28,6 +28,7 @@ class Wagon():
 
         returns : None
         """
+        
         if(top):
             numCB = len(self.amountTop)
             if(numCB == 0):
@@ -45,7 +46,11 @@ class Wagon():
             for i in range(numCB):
                 self.amountBot[i].place(x=baseX+(i+1)*stepSize,y=self.bottom.top)
         
-        
+    def moveX(self,change):
+        self.X += change
+        self.bottom = pygame.Rect.move(self.bottom,change,0)
+        self.top = pygame.Rect.move(self.top,change,0)
+
 
     def resize(self,X,Y,wagonW,wagonH):
         self.asset = pygame.image.load(self.assetP+f"sprite_traincars{self.col}.png")

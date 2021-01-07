@@ -1,1 +1,2 @@
  - Fix resizing for better overview
+ - Fix images so no warnings

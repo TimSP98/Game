@@ -6,11 +6,18 @@ class Card:
     cowboyPath = "./Assets/Cowboy/"
     def __init__(self,action):
         """ action  : string
-            options : Jump, Move, Shoot, Turn """
+            - options for action: [Jump, Move, Shoot, Turn] """
         self.action = action
+        assert self.action.lower() in ["jump","move","shoot","turn"]
         self.X = 0
         self.Y = 0
+        self.chosen = False
+        self.num = None
+
+        self.myfont = pygame.font.SysFont("Comic Sans MS",100)
         self.resize(self.screenW,self.screenH)
+
+
 
     def resize(self,screenW,screenH,scale = 1.0):
         """
@@ -44,16 +51,25 @@ class Card:
                 self.cowboyAsset[i] = pygame.transform.flip(self.cowboyAsset[i],True,False)
             centerX = 23*screenW//32
 
-        self.cardW = int((screenW//8)*scale)
+        self.cardW = int((screenH//4.5)*scale)
         self.cardH = int((self.cardW*1.5)*scale)
         self.cowboyW = int((self.cardW//2.25)*scale)
         self.cowboyH = self.cowboyW
         self.placeCard((centerX,centerY))
 
+        #Text on Card
+        self.actionText = self.myfont.render(self.action,False,(0,0,0))
+        self.actionText = pygame.transform.scale(self.actionText,(self.cardW//2,self.cardH//5))
+
+        if(self.chosen):
+            colorcode = {1 : (255,255,0), 2: (131,137,150), 3: (205,127,50)}
+            self.numText = self.myfont.render(str(self.num),False,colorcode[self.num])
+            self.numText = pygame.transform.scale(self.numText,(self.cardW//4,self.cardW//4))
+            #Scale num
+
         self.cardAsset = pygame.transform.scale(self.cardAsset,(self.cardW,self.cardH))
         for i in range(len(self.cowboyAsset)):
             self.cowboyAsset[i] = pygame.transform.scale(self.cowboyAsset[i],(self.cowboyW,self.cowboyH))
-
 
     def placeCard(self,center):
         """
@@ -65,17 +81,17 @@ class Card:
         self.X = x-self.cardW//2
         self.Y = y-self.cardH//2
 
+    def ishovering(self,x,y):
+        return (x > self.X and  y > self.Y and x < self.X+self.cardW and y < self.Y+self.cardH)
 
     def checkmousePos(self,x,y):
         """ x and y position of mouse
             if mouse is hovering over card then highlight it"""
-        if(x > self.X and  y > self.Y and x < self.X+self.cardW and y < self.Y+self.cardH ):
+        if(self.ishovering(x,y)):
             #Increases card size by 2%, when mouse is hovering the card
             self.resize(self.screenW,self.screenH,scale = 1.2)
         else:
             self.resize(self.screenW,self.screenH)
-
-
 
     def animate(self,screen,msCount):
         screen.blit(self.cardAsset,(self.X,self.Y))
@@ -100,5 +116,30 @@ class Card:
         cowboyX = self.X + int(self.cardW//2.95)+ diffX
         cowboyY = self.Y + 3*self.cardH//8      + diffY
         
-        
+        # Displays Cowboy
         screen.blit(self.cowboyAsset[i],(cowboyX,cowboyY))
+        
+        actionX = self.X + self.cardW//2 - self.actionText.get_width()//2
+        actionY = self.Y + self.cardH//10
+        # Displays card action Text
+        screen.blit(self.actionText,(actionX,actionY))
+        if(self.chosen):
+            # Displays card num text
+            numX = self.X + self.cardW - self.numText.get_width()
+            numY = self.Y
+            screen.blit(self.numText,(numX,numY))
+
+    def select(self,num):
+        # Set self.num,se fl.chosen
+        # display text
+        self.num = num
+        self.chosen = True
+
+        self.resize(self.screenW,self.screenH,scale = 1.2)
+
+    def unselect(self):
+        self.num = None
+        self.chosen = False
+
+        self.resize(self.screenW,self.screenH,scale = 1.2)
+
