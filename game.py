@@ -20,6 +20,7 @@ class Game():
             except NameError:
                 exec("self."+param+"='"+str(val)+"'")
         # Assertoins for the game to run
+        self.single = single
         if (not single):
             self.net = Network(self.serverip,self.port)
             self.id = self.net.id
@@ -111,7 +112,6 @@ class Game():
         self.waitLoop(time)
         del self.textsurface
 
-
     def playerAction(self,nextAction):
         """
         nextAction : tuple[string,string]
@@ -142,7 +142,20 @@ class Game():
             self.playerAction(nextAction = nextAction)
             self.waitLoop(120)
         self.chooseState = 1
-    
+
+    def submit(self):
+        actions = []
+        for i in range(len(self.cards)):
+            if(self.cards[i].chosen):
+                actions.append((self.cards[i].num,(self.id,self.cards[i].action)))
+        if(len(actions) != 3):
+            print("Choose more you dumb fuck")
+            return
+        
+        actions.sort()
+        actions = [tup for _ , tup in actions]
+        if(not self.single):
+            self.net.send(data = actions, dataType = 1)
     def baseDrawWindow(self):
         self.screen.blit(self.bg_surface,(0,0))
         self.train.animate(self.screen)
@@ -257,13 +270,15 @@ class Game():
                 if(y>= self.height//2 and event.button == 1):
                     self.drag = True
                     self.lastMouseX = x
-
+                if(self.submitButton.ishovering(x,y) and event.button == 1):
+                    self.submitButton.press()
             if (event.type == pygame.MOUSEBUTTONUP):
                 if(self.drag and event.button == 1):
                     self.drag = False
                 elif(self.chooseState and event.button == 1):
                     # We are in chooseState, left button is released
                     # and self.drag == False
+                    # Checks whether a card was clicked
                     for i in range(4):
                         chosenCard = None
                         if(self.cards[i].ishovering(x,y)):
@@ -271,7 +286,9 @@ class Game():
                             break
                     if(chosenCard != None):
                         self.chooseCard(card = chosenCard)
-                
+                    elif(self.submitButton.unpress(x,y)):
+                        #True if submit button was pressed
+                        self.submit()
             if(self.chooseState and self.alive):
                 for i in range(4):
                     self.cards[i].checkmousePos(x,y)

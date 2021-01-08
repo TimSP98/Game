@@ -1,76 +1,84 @@
 import socket
-from _thread import *
+import _thread as thread
 import sys
 import json
 
-with open("ServerConf.json","r") as infile:
-    settings = json.load(infile)
-for param,val in settings.items():
-    print(param,val)
-    try:
-        exec(param+"="+str(val))
-    except NameError:
-        exec(param+"='"+str(val)+"'")
+class Server:
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    def __init__(self):
+        with open("ServerConf.json","r") as infile:
+            settings = json.load(infile)
+        for param,val in settings.items():
+            print(param,val)
+            try:
+                exec(f"self.{param}={val}")
+            except NameError:
+                exec(f"self.{param}='{val}'")
 
-server = serverip
-port = serverPort
-server_ip = socket.gethostbyname(server)
+        self.currentID = 1
+        self.connectedPlayers = 0
 
-try:
-    s.bind((server,port))
-except socket.error as e:
-    print(str(e))
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_ip = socket.gethostbyname(self.serveripv4)
 
-s.listen(nPlayers)
-print("waiting for connection")
+        try:
+            self.s.bind((self.serveripv4,self.port))
+        except socket.error as e:
+            print(str(e))
 
-
-currentId = 0
-pos = ["0:50,50","1:100,100"]
-connectedPlayers = 0
-
-def shutdown():
-    sys.exit()
+        self.s.listen(self.nPlayers)
+        print("waiting for connection")
 
 
-def threaded_client(conn):
-    global currentId, pos, nPlayers, connectedPlayers
-    initInfo = str(currentId) + ","+ str(nPlayers)
-    conn.send(str.encode(initInfo))
-    currentId = "1"
-    reply = ''
-    while True:
-        if connectedPlayers != nPlayers:
-            #Waiting for people to connect
-            continue
 
-        data = conn.recv(2048)
-        reply = data.decode('utf-8')
-        if not data:
-            conn.send(str.encode("Goodbye"))
-            break
-        else:
-            print("Recieved: "+ reply)
-            arr = reply.split(":")
-            pid = int(arr[0])
-            pos[pid] = reply
+    def shutdown(self):
+        sys.exit()
 
-            if pid == 0: nid = 1
-            if pid == 1: nid = 0
+    def interpolate(self,data):
+        dataType, info = data.split(";")
+        dataType = int(dataType)
+        info = info.split(":")
+        print(dataType)
+        print(info)
 
-            reply = pos[nid][:]
-            print("Sending: "+ reply)
+    
+    def threaded_client(self,conn):
+        initInfo = f"{self.currentID},{self.nPlayers}"
+        conn.send(str.encode(initInfo))
+        self.currentID +=1
+        reply = ''
+        while True:
+            if self.connectedPlayers != self.nPlayers:
+                #Waiting for people to connect
+                continue
+            print("yes")
+            data = conn.recv(2048)
+            if not data:
+                conn.send(str.encode("Goodbye"))
+                break
 
+            # Decode the information
+            recieved = data.decode('utf-8')
+            self.interpolate(recieved)
+            
         conn.close()
-        shutdown()
+        self.shutdown()
 
-start = False
-while True:
-    conn, addr = s.accept()
-    print("Connected to:",addr)
-    connectedPlayers +=1
-    if( connectedPlayers == nPlayers):          start = True
-    if(start and connectedPlayers != nPlayers): break
-    start_new_thread(threaded_client, (conn,))
+    def run(self):
+        self.start = False
+        while True:
+            conn, addr = self.s.accept()
+            print("Connected to:",addr)
+            self.connectedPlayers +=1
+            if( self.connectedPlayers == self.nPlayers): start = True
+            if(self.start and self.connectedPlayers != self.nPlayers): break
+            thread.start_new_thread(self.threaded_client, (conn,))
+
+
+def main():
+    srv = Server()
+    srv.run() 
+
+if __name__ == "__main__":
+    main()
+

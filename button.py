@@ -1,11 +1,14 @@
 import pygame
 
 class Button:
+    
+    assetP = "./Assets/Buttons/"
 
     def __init__(self,action):
         self.action = action
         self.X = 0
         self.Y = 0
+        self.pressed = False
         self.myfont = pygame.font.SysFont("Comic Sans MS",100)
 
         self.resize(self.screenW,self.screenH)
@@ -14,21 +17,34 @@ class Button:
         self.screenW = screenW
         self.screenH = screenH
 
-        self.width = self.screenH//15
-        self.height = self.width//2
-        
+        self.width = self.screenH//3
+        self.height = int(self.width//2.5)
+        self.X = 26*screenW//32 #screenW - (self.width+self.width*0.5)
+        self.Y = screenH//4
 
-        self.buttonText = self.myfont.render(self.action,False,(0,0,0))
-        self.buttonText = pygame.transform.scale(self.buttonText,(screenH//5,screenH//10))
-
-        self.Rect = self.buttonText.get_rect()
-        W = self.Rect.width
-        H = self.Rect.height
-
-        self.X = screenW - (W+W*0.5)
-        self.Y = H*4
-        pygame.Rect.update(self.Rect,(self.X,self.Y),(W,H))
+        if(self.pressed):
+            self.buttonAsset = pygame.image.load(self.assetP + "submit_down.png")
+        else:
+            self.buttonAsset = pygame.image.load(self.assetP + "submit_up.png")
+        self.buttonAsset = pygame.transform.scale(self.buttonAsset,(self.width,self.height))
 
     def animate(self,screen):
-        pygame.draw.rect(screen,(178,190,181),self.Rect)
-        screen.blit(self.buttonText,(self.X,self.Y))
+        screen.blit(self.buttonAsset,(self.X,self.Y))
+
+    def ishovering(self,x,y):
+        return (x > self.X and  y > self.Y and x < self.X+self.width and y < self.Y+self.height)
+
+    def press(self):
+        if(not self.pressed):
+            self.pressed = True
+            self.resize(self.screenW,self.screenH)
+    
+    def unpress(self,x,y):
+        if(self.ishovering(x,y) and self.pressed):
+            return_val = True
+        else:
+            return_val = False
+
+        self.pressed = False
+        self.resize(self.screenW,self.screenH)
+        return return_val

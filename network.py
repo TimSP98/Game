@@ -13,19 +13,22 @@ class Network:
 
         data = self.connect()
         self.id , self.nPlayers = map(int,data.split(","))
+        print(self.id,self.nPlayers)
 
     def connect(self):
         self.client.connect(self.addr)
         return self.client.recv(2048).decode()
 
-    def send(self, data):
+    def recieve(self):
+        try:
+            reply = self.client.recv(2048).decode()
+            return reply
+        except socket.error as e:
+            print(str(e))
+    def send(self, data,dataType):
         """
         :param data: str
         :return: str
         """
-        try:
-            self.client.send(str.encode(data))
-            reply = self.client.recv(2048).decode()
-            return reply
-        except socket.error as e:
-            return str(e)
+        data = str(dataType) + ";" + ":".join([str(item) for item in data])
+        self.client.send(str.encode(data))
