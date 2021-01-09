@@ -1,4 +1,6 @@
-start cmd.exe /k python server.py
+start cmd.exe /k "cd Server && python server.py"
+timeout 1
+start cmd.exe /C python run.py
 timeout 1
 start cmd.exe /C python run.py
 timeout 1

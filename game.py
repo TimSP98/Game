@@ -16,9 +16,9 @@ class Game():
             settings = json.load(infile)
         for param,val in settings.items():
             try:
-                exec("self."+param+"="+str(val))
-            except SyntaxError:
-                exec("self."+param+"='"+str(val)+"'")
+                exec(f"self.{param}={val}")
+            except:
+                exec(f"self.{param}='{val}'")
         # Assertoins for the game to run
         self.single = single
         if (not single):
@@ -104,12 +104,20 @@ class Game():
             self.players.append(CB)
         self.placeCowboys()
 
+    def deadLoop(self):
+        self.net.send(data = str(self.id),dataType=2)
+        while(True):
+            self.waitRecieve()
+            self.chooseState = 0
+
+
     def killPlayer(self,player : Cowboy):
         obj = self.players.pop(self.players.index(player))
+        self.nPlayers -=1
         if(self.id == obj.playerID):
+            # You died
             self.alive = 0
         del obj
-        self.nPlayers -=1
 
     def placeCowboys(self):
         for i in range(len(self.train.wagons)):
@@ -344,27 +352,7 @@ class Game():
             for i in range(len(self.cards)):
                 self.cards[i].resize(self.width,self.height)
             self.submitButton.resize(self.width,self.height)
-        
-    def gameInteraction(self,event):
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_q:
-                self.chooseState = False
-                self.actionExec()
 
-            if event.key == pgvar.K_ESCAPE:
-                run = False
-
-            if event.key == pgvar.K_j:
-                self.players[self.id-1].jump()
-
-            if event.key == pgvar.K_m:
-                self.players[self.id-1].move()
-
-            if event.key == pgvar.K_t:
-                self.players[self.id-1].turn()
-
-            if event.key == pgvar.K_s:
-                self.players[self.id-1].shoot()
     
     def eventChecker(self):
         run = True
@@ -410,9 +398,6 @@ class Game():
             if(self.chooseState and self.alive):
                 for i in range(4):
                     self.cards[i].checkmousePos(x,y)
-
-            if (self.alive and self.wait == 0):
-                self.gameInteraction(event)
             
         return run
     
@@ -438,6 +423,8 @@ class Game():
 
     def gameloop(self):
         while(self.run):
+            if(not self.alive):
+                self.deadLoop()
             self.run = self.eventChecker()
 
             if(self.drag):

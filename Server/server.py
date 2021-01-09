@@ -15,7 +15,7 @@ class Server:
             print(param,val)
             try:
                 exec(f"self.{param}={val}")
-            except SyntaxError:
+            except:
                 exec(f"self.{param}='{val}'")
 
         # 1 = alive and 3 actions, 2 = I ded 
@@ -38,36 +38,50 @@ class Server:
         self.s.listen(self.nPlayers)
         print("waiting for connection")
 
-    def interType1(self,info):
+    def interpolate(self,data,conn):
+        # Format is dataType ; data ; *gamestate
+        dataType, info = data.split(";")
+        dataType = int(dataType)
+        self.inter[dataType](info,conn)
+
+    def interType1(self,info,conn):
         # Info is a list of the three actions that info[0][1] should act, bit scuffed I know
         info = info[1:-1].split(",")
         for i in range(len(info)):
             info[i] = info[i].strip()[1:-1]
         print("info:",info)
         playerID = int(info[0][0])
-        print(info)
         print(playerID)
         self.allActions[playerID] = info
     
-    def interType2(self,info):
+    def interType2(self,info,conn):
         # info should be just an int of the player who sent the data, as he is dead
-        self.playersAlive[info[0]] = False
+        self.playersAlive[int(info[0])] = False
+        self.deadPlayerLoop(conn)
+
+    def deadPlayerLoop(self,conn):
+        while True:
+            while(not self.allSubmitted()):
+                conn.send(str.encode("0;0"))
+                conn.recv(2048)
+            #All (alive) players have sent in their actions
+            if(not self.called):
+                self.allActionOrder()
+            # dataType and info
+            conn.send(str.encode("3;"+self.finalOrder))
+            time.sleep(5)
+            self.called = False
+            self.allActions = [None]*self.nPlayers
 
     def shutdown(self):
         sys.exit()
 
-    def interpolate(self,data):
-        # Format is dataType ; data ; *gamestate
-        dataType, info = data.split(";")
-        dataType = int(dataType)
-        self.inter[dataType](info)
 
     def allSubmitted(self):
-        returnVal = True
         for i in range(self.nPlayers):
             if(self.allActions[i] == None and self.playersAlive[i]):
-                returnVal = False
-        return returnVal
+                return False
+        return True
     
     def allActionOrder(self):
         self.called = True
@@ -102,7 +116,7 @@ class Server:
 
             # Decode the information
             recieved = data.decode('utf-8')
-            self.interpolate(recieved)
+            self.interpolate(recieved,conn)
             while(not self.allSubmitted()):
                 conn.send(str.encode("0;0"))
                 conn.recv(2048)
@@ -111,7 +125,7 @@ class Server:
                 self.allActionOrder()
             # dataType and info
             conn.send(str.encode("3;"+self.finalOrder))
-            time.sleep(20)
+            time.sleep(10)
             self.called = False
             self.allActions = [None]*self.nPlayers
             
