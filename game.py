@@ -1,13 +1,13 @@
 import pygame
 from pygame import locals as pgvar
-from sys import exit
+import sys
 from cowboy import Cowboy
 from train import Train
 from card import Card
 from button import Button
 from network import Network
 import json
-
+import random
 
 class Game():
 
@@ -22,9 +22,8 @@ class Game():
         # Assertoins for the game to run
         self.single = single
         if (not single):
-            self.net = Network(self.serverip,self.port)
-            self.id = self.net.id
-            self.nPlayers = self.net.nPlayers
+            self.netinit()
+
         else:
             self.nPlayers = 5
             self.id = 1
@@ -34,9 +33,10 @@ class Game():
 
 
         # Variable declarations
+        self.run = True
         self.players = [] # List of cowboy objects, representing the players
         self.cards = [] # List of card objects, that you can choose from
-        self.train = Train(nWagons=self.nPlayers+1,screenW = self.width,screenH = self.height)
+        self.train = Train(nWagons=self.nPlayers+2,screenW = self.width,screenH = self.height)
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((self.width,self.height),pygame.RESIZABLE)
         self.bg_surface = pygame.image.load("./Assets/desert.png").convert()
@@ -45,14 +45,16 @@ class Game():
         self.nextAction = None
         pygame.init()
         self.alive = 1
-        self.chooseState = 1
+        self.chooseState = 0
+        self.points = [0]*self.nPlayers
+        self.recieved = False
 
         self.playerinit()
         self.cardsinit()
         self.buttoninit()
 
         self.chosenCardCount = 0
-        self.actionQ = [("2","Turn")]
+        self.actionQ = []
         #[("1","Move"),("3","Turn"),("3","Move"),("4","Turn"),("4","move"),("4","move"),("5","Turn"),("5","move"),("5","move"),("5","move"),("2","Jump"),("2","Jump")]
         self.wait = 0
         self.drag = False
@@ -61,8 +63,19 @@ class Game():
         pygame.font.init()
         self.myfont = pygame.font.SysFont("Comic Sans MS",100)
         self.resizeWindow()
+        self.seed = None
+        if(not single):
+            self.connectinit()
+        random.seed(self.seed)
         print("INIT FINSHED")
-    
+        self.gameloop()
+
+    def netinit(self):
+        setattr(Network,"_gameP",self)
+        self.net = Network(self.serverip,self.port)
+        self.id = self.net.id
+        self.nPlayers = self.net.nPlayers
+
     def buttoninit(self):
         setattr(Button,"_gameP",self)
         setattr(Button,"screenW",self.width)
@@ -82,9 +95,12 @@ class Game():
         setattr(Cowboy,"_trainP",self.train)
         setattr(Cowboy,"screenW",self.width)
         setattr(Cowboy,"screenH",self.height)
-
+        flip = False
         for i in range(1,self.nPlayers+1):
-            CB = Cowboy(wagonI = i,flip=False)
+            if i > (self.nPlayers)//2:
+                print("done")
+                flip = True
+            CB = Cowboy(wagonI = i,flip=flip)
             self.players.append(CB)
         self.placeCowboys()
 
@@ -109,16 +125,75 @@ class Game():
         - Amount of game ticks that the text should be displayed
         """
         self.textsurface = self.myfont.render(text,False,(0,0,0))
+        self.textsurface = pygame.transform.scale(self.textsurface,(self.width//2,self.width//8))
         self.waitLoop(time)
         del self.textsurface
 
-    def playerAction(self,nextAction):
+    def distPoints(self):
+        points = random.randint(200,800)
+        points = int((points//10)*10)
+        i = len(self.train.wagons)-1
+        while i >= 0:
+            if(len(self.train.wagons[i].amountTop) > 0):
+                pointer = self.train.wagons[i].amountTop
+                break
+            elif(len(self.train.wagons[i].amountBot) > 0):
+                pointer = self.train.wagons[i].amountBot
+                break
+            i -= 1
+        playerID = pointer[-1].playerID
+        self.points[playerID] += points
+        text = f"Player {playerID} recieves {points} points"
+        self.displayGameText(text = text,time = 180)      
+
+
+    def removeWagon(self):
+        while(len(self.train.wagons[-1].amountTop) > 0):
+            CB = self.train.wagons[-1].amountTop[0]
+            CB.die()
+        while(len(self.train.wagons[-1].amountBot) > 0):
+            CB = self.train.wagons[-1].amountBot[0]
+            CB.die()
+        wag = self.train.wagons.pop()
+        del wag       
+        #Assert if only 1 is left afterwards then terminate game then
+        # both 1 wagon or 1 player
+        if(len(self.train.wagons) == 1 or self.nPlayers < 2):
+            print("Wagons Left:",len(self.train.wagons),"Players left:",self.nPlayers)
+            #We (might) have a winner
+            self.findWinner()
+
+    def findWinner(self):
+        if(self.nPlayers == 0):
+            winners = []
+        elif(self.nPlayers == 1):
+            winners = [self.players[0].playerID]
+        else:
+            self.distPoints()
+            winners = [ID for ID, val in enumerate(self.points) if val == max(self.points)]
+        self.finish(winners)
+
+
+    def finish(self,winners):
+        #Display winner on the screen forever
+        if(len(winners) == 0):
+            text = "Everybody died, everybody lost"
+        elif (len(winners) == 1):
+            text = f"Player {winners[0]} wins the game"
+        else:
+            text = "We have a tie between: "
+            for ID in winners[:-1]:
+                text += f"Player {ID}, "
+            text += f"and Player {winners[-1]}"
+        while True:
+            self.displayGameText(text = text,time=1000)
+
+    def playerAction(self,player,action):
         """
-        nextAction : tuple[string,string]
-        - Cotains at index=0 the playerID, and at index=1 the action to be performed
+        player : int
+
+        action : string
         """
-        player = int(nextAction[0])
-        action = nextAction[1].lower()
         pi = -1
         for i in range(len(self.players)):
             if(self.players[i].playerID == player):
@@ -131,31 +206,66 @@ class Game():
             self.displayGameText(text = text,time = 120)
 
     def actionExec(self):
+        print("actionExec:",len(self.actionQ),self.recieved)
         while(len(self.actionQ) > 0):
             # Loads next action to be done
             nextAction = self.actionQ.pop(0)
             # Displays what the next action is and who does it
             # Displays for 180 ticks (3s)
-            text = f"Player {nextAction[0]} {nextAction[1]}s"
+            player,action = nextAction.split("-")
+            player = int(player)
+            action = action.lower()
+            text = f"Player {player} {action}s"
             self.displayGameText(text = text,time = 180)
             # Performs the action and waits 120 ticks (2s)
-            self.playerAction(nextAction = nextAction)
+            self.playerAction(player = player, action = action)
             self.waitLoop(120)
+        #Remove most left wagon
+        self.removeWagon()
+        # Distribute points to the player most to the left
+        self.distPoints()
         self.chooseState = 1
 
     def submit(self):
         actions = []
         for i in range(len(self.cards)):
             if(self.cards[i].chosen):
-                actions.append((self.cards[i].num,(self.id,self.cards[i].action)))
+                actions.append((self.cards[i].num,f"{self.id}-{self.cards[i].action}"))
         if(len(actions) != 3):
-            print("Choose more you dumb fuck")
             return
+        # Unselect all cards
+        for i in range(len(self.cards)):
+            if(self.cards[i].chosen):
+                self.cards[i].unselect()
+        self.chosenCardCount = 0
         
+        self.chooseState = 0
         actions.sort()
-        actions = [tup for _ , tup in actions]
+        actions = [string for _ , string in actions]
         if(not self.single):
             self.net.send(data = actions, dataType = 1)
+            self.waitRecieve()
+
+    def connectinit(self):
+        while(not self.recieved):
+            self.net.recieve()
+            self.displayGameText(text = "Waiting for other Players to connect",time = 60)
+        self.displayGameText(text = "All players have connected",time = 180)
+        self.displayGameText(text = f"You are player {self.id}",time = 180)
+        self.nameText = self.myfont.render(f"You are player {self.id}",False,(0,0,0))
+        self.nameText = pygame.transform.scale(self.nameText,(self.width//12,self.height//20))
+        self.chooseState = 1
+        self.recieved = False
+
+    def waitRecieve(self):
+        #Wait until answer is recieved
+        while(not self.recieved):
+            self.net.recieve()
+            self.displayGameText(text = "Waiting for other Players",time = 60)
+        self.actionExec()
+        self.recieved = False
+        self.chooseState = 1
+
     def baseDrawWindow(self):
         self.screen.blit(self.bg_surface,(0,0))
         self.train.animate(self.screen)
@@ -169,7 +279,13 @@ class Game():
             self.screen.blit(self.textsurface,(X,Y))
         except AttributeError:
             pass
-
+        try:
+            X = self.width - int(self.nameText.get_width()*1.05)
+            Y = 0
+            self.screen.blit(self.nameText,(X,Y))
+        except AttributeError:
+            pass
+    
     def drawWindow(self,wait = False):
         """
         wait : bool
@@ -184,10 +300,6 @@ class Game():
             for i in range(4):
                 self.cards[i].animate(self.screen,self.msCount)
             self.submitButton.animate(self.screen)
-        elif(not self.chooseState):
-            #Action state
-            if(self.msCount % 180 == 0):
-                self.actionExec()
                 
         pygame.display.update()
 
@@ -222,7 +334,12 @@ class Game():
             self.players[i].resize(self.width,self.height,self.scale)
         
         self.placeCowboys()
-
+        try:
+            c = self.nameText
+            self.nameText = self.myfont.render(f"You are player {self.id}",False,(0,0,0))
+            self.nameText = pygame.transform.scale(self.nameText,(self.width//12,self.height//20))
+        except:
+            pass
         if(self.chooseState):
             for i in range(len(self.cards)):
                 self.cards[i].resize(self.width,self.height)
@@ -231,7 +348,8 @@ class Game():
     def gameInteraction(self,event):
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_q:
-                self.chooseState = abs(self.chooseState-1)
+                self.chooseState = False
+                self.actionExec()
 
             if event.key == pgvar.K_ESCAPE:
                 run = False
@@ -313,10 +431,12 @@ class Game():
             self.msCount %= 10000
             self.clock.tick(60)
             self.wait -= 1
+        if(not self.run):
+            pygame.quit()
+            self.close()
         return
 
     def gameloop(self):
-        self.run = True
         while(self.run):
             self.run = self.eventChecker()
 
@@ -332,6 +452,7 @@ class Game():
             self.clock.tick(60)
         
         pygame.quit()
+        self.close()
 
     def close(self):
         with open("PlayerConf.json","r") as infile:
@@ -341,10 +462,7 @@ class Game():
         settings["scale"] = self.scale
         with open("PlayerConf.json","w") as outfile:
             json.dump(settings,outfile,indent=2)
-
-    def run(self):
-        self.gameloop()
-
+        sys.exit()
 
 
 

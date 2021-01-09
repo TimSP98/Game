@@ -9,7 +9,6 @@ class Train():
         self.headY = 0
         self.size = 0
         self.head = pygame.image.load(self.assetP+"train.png")
-        self.nWagons = nWagons
         self.wagons = [Wagon(col=i%5) for i in range(nWagons)]
 
         self.resize(screenW,screenH)
@@ -17,7 +16,7 @@ class Train():
 
     def assertions(self,playersLeft):
         tot = 0
-        for i in range(self.nWagons):
+        for i in range(len(self.wagons)):
             tot += len(self.wagons[i].amountTop)
             tot += len(self.wagons[i].amountBot)
         assert tot == playersLeft, f"There are supposed to be {playersLeft} but I counted {tot} players"
@@ -55,7 +54,7 @@ class Train():
 
 
         #The rest of the wagons
-        for i in range(1,self.nWagons):
+        for i in range(1,len(self.wagons)):
             X += w*0.82
             self.wagons[i].resize(X,Y,w,h)
         

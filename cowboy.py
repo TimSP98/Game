@@ -7,7 +7,7 @@ class Cowboy():
         self.X = 0
         self.Y = 0
         self.wagonI = wagonI
-        self.playerID = wagonI
+        self.playerID = wagonI-1
         self.height = 0
         self.width = 0
         self.top = 0
@@ -22,9 +22,10 @@ class Cowboy():
 
         self.myfont = pygame.font.SysFont("UBUNTU",100)
         
-
         self.resize(self.screenW,self.screenH,scale = self.scale)
         self.crntAsset = self.idleNG
+        if(flip):
+            self.turn()
           
     def animate(self,screen,msCount):
         msCount %= len(self.crntAsset)*20
@@ -214,14 +215,14 @@ class Cowboy():
                     crntWagon += delta
             else: #self.top = False (at bottom) can only shoot 1 wagon away
                 crntWagon = self.wagonI+delta
-                if(self._trainP.wagons[crntWagon].amountBot):
+                if(crntWagon < len(self._trainP.wagons) and self._trainP.wagons[crntWagon].amountBot):
                     indexToShoot = 0 if self.right else -1
                     shotPlayer = self._trainP.wagons[crntWagon].amountBot[indexToShoot]
                     hit = True
             
         if(not hit):
             #Noone got hit
-            text = f"Player {self.playerID} shot but didn't hit anyone (get gud scrub)"
+            text = f"Player {self.playerID} missed (get gud scrub)"
             self._gameP.displayGameText(text = text, time = 180)
         else: # shotPlayer references player that got hit
             shotPlayer.move(shot=True,right = self.right) # Shoots player
