@@ -15,7 +15,7 @@ class Server:
             print(param,val)
             try:
                 exec(f"self.{param}={val}")
-            except NameError:
+            except SyntaxError:
                 exec(f"self.{param}='{val}'")
 
         # 1 = alive and 3 actions, 2 = I ded 

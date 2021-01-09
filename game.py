@@ -17,7 +17,7 @@ class Game():
         for param,val in settings.items():
             try:
                 exec("self."+param+"="+str(val))
-            except NameError:
+            except SyntaxError:
                 exec("self."+param+"='"+str(val)+"'")
         # Assertoins for the game to run
         self.single = single
