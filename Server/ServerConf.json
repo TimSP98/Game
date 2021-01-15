@@ -1,5 +1,5 @@
 {
-    "nPlayers" : 2,
-    "serveripv4" : "",
+    "nPlayers" : 3,
+    "serveripv4" : "localhost",
     "port": 5555
 }

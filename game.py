@@ -39,8 +39,6 @@ class Game():
         self.train = Train(nWagons=self.nPlayers+2,screenW = self.width,screenH = self.height)
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((self.width,self.height),pygame.RESIZABLE)
-        self.bg_surface = pygame.image.load("./Assets/desert.png").convert()
-        self.bg_surface = pygame.transform.scale(self.bg_surface,(self.width,self.height))
         self.msCount = 0
         self.nextAction = None
         pygame.init()
@@ -98,15 +96,16 @@ class Game():
         flip = False
         for i in range(1,self.nPlayers+1):
             if i > (self.nPlayers)//2:
-                print("done")
                 flip = True
             CB = Cowboy(wagonI = i,flip=flip)
             self.players.append(CB)
         self.placeCowboys()
 
     def deadLoop(self):
+        print("deadloop entered")
         self.net.send(data = str(self.id),dataType=2)
         while(True):
+            print("deadloop moddafukka")
             self.waitRecieve()
             self.chooseState = 0
 
@@ -335,11 +334,12 @@ class Game():
         self.placeCowboys()
         
     def resizeWindow(self):
-        self.bg_surface = pygame.image.load("./Assets/desert.png").convert()
+        print("RESIZE CALLED")
+        self.bg_surface = pygame.image.load("./Assets/out.png").convert()
         self.bg_surface = pygame.transform.scale(self.bg_surface , (self.width,self.height))
         self.train.resize(self.width,self.height,scale = self.scale)
         for i in range(self.nPlayers):
-            self.players[i].resize(self.width,self.height,self.scale)
+            self.players[i]._resize(self.width,self.height,self.scale)
         
         self.placeCowboys()
         try:

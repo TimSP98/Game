@@ -1,2 +1,7 @@
- - Fix resizing for better overview
- - Fix images so no warnings
+text
+shoot from start to end
+
+baseObject stuff:
+- calcSize for each object, defines self.height, self.width
+- self.assetPath for each object
+- self._resize2

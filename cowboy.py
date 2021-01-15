@@ -1,8 +1,7 @@
 import pygame
+from baseObject import GameObject
 
-
-class Cowboy():
-    assetP = "./Assets/Cowboy/"
+class Cowboy(GameObject):
     def __init__(self,wagonI: int,flip : bool):
         self.X = 0
         self.Y = 0
@@ -13,7 +12,14 @@ class Cowboy():
         self.top = 0
         self.prone = 0
         self.angle = 0
+        
+        #init for assets
+        self.assets = []
+        self._resetAP()
         self.scale = 1.0
+        self.name = f"Player {self.playerID}"
+
+
 
         # Makes a pointer to self at the place
         # where self is located (initial at the bottom layer)
@@ -22,22 +28,20 @@ class Cowboy():
 
         self.myfont = pygame.font.SysFont("UBUNTU",100)
         
-        self.resize(self.screenW,self.screenH,scale = self.scale)
-        self.crntAsset = self.idleNG
+        self._resize(self.screenW,self.screenH)
         if(flip):
             self.turn()
           
     def animate(self,screen,msCount):
-        msCount %= len(self.crntAsset)*20
+        msCount %= len(self.assets)*20
         i = msCount//20
-        screen.blit(self.crntAsset[i],(self.X,self.Y))
-        screen.blit(self.nameTag,(self.nameTagX,self.nameTagY))
+        screen.blit(self.assets[i],(self.X,self.Y))
+        screen.blit(self.assetName,(self.assetNameX,self.assetNameY))
 
     def flip(self):
-        for i in range(len(self.idleNG)):
-            self.idleNG[i] = pygame.transform.flip(self.idleNG[i],True,False)
-        for i in range(len(self.shootAsset)):
-            self.shootAsset[i] = pygame.transform.flip(self.shootAsset[i],True,False)
+        for i in range(len(self.assets)):
+            self.assets[i] = pygame.transform.flip(self.assets[i],True,False)
+        
         self.X += self.width//8 if self.right else -self.width//8
         
     def place(self,x,y):
@@ -46,42 +50,49 @@ class Cowboy():
         y : int
         - Coordinate of center of feet
         """
-        self.X = x-self.width//2
-        self.Y = y-self.height
+        self.X = x - int(self.width*0.5)
+        self.Y = y - self.height
         if(self.prone):
             if((self.right and self.angle == -90) or (not self.right and self.angle == 90) ):
                 self.Y += self.height//2
             else:
                 self.Y += self.height//10
 
-        self.nameTagX = (self.X + self.width//2) - self.nameTag.get_width()//2 
-        self.nameTagY = self.Y -  (self.nameTag.get_height()//2)
+        self.assetNameX = self.X + int(self.width*0.5) - int(self.assetNameW*0.5)
+        self.assetNameY = self.Y -  int(self.assetNameH*0.5)
 
-    def resize(self,screenW,screenH,scale = 1.0):
-        self.scale = scale
+
+    def _calcSize(self):
+        """
+        Calculates the size of the object,
+        and stores in class variables
+        """
+        self.height = self.screenH//8
+        self.width = self.height
+        self.assetNameW = int(self.width*1.5)
+        self.assetNameH = int(self.height*0.5)
+
+
+    def _resize2(self,screenW,screenH,scale = 1.0):
+        """
+        Extra resizing
+
+        fixes if person if flipped or prone
+        Creates the surface for the nameTag
+        """
+        if(not self.right): self.flip()
         if(self.prone):
-            self.idleNG = [pygame.image.load(self.assetP+f"Cowboy4_shoot_0.png")]
-        else:
-            self.idleNG = [pygame.image.load(self.assetP+f"Cowboy4_idle_without_gun_{i}.png") for i in range(4)]
-        self.shootAsset = [pygame.image.load(self.assetP+f"Cowboy4_shoot_{i}.png") for i in range(4)]
-        self.height = int((screenH//8)*scale)
-        self.width = int(self.height)
+            #Flips the surface, to visualize prone
+            self.assets = [pygame.transform.rotate(self.assets[0],self.angle)]
         
-        for i in range(len(self.idleNG)):
-            self.idleNG[i] = pygame.transform.scale(self.idleNG[i],(self.width,self.height))
+        assetName = self.myfont.render(self.name,False,(255,0,0))
+        W = int(self.assetNameW*scale)
+        H = int(self.assetNameH*scale)
+        self.assetName = pygame.transform.scale(assetName,(W,H))
 
-        if(not self.right):
-            self.flip()
-        if(self.prone):
-            self.idleNG = [pygame.transform.rotate(self.idleNG[0],self.angle)] 
-        for i in range(len(self.shootAsset)):
-            self.shootAsset[i] = pygame.transform.scale(self.shootAsset[i],(self.width,self.height))
+    def _resetAP(self):
+        self.assetPaths = [f"./Assets/Cowboy/Cowboy4_idle_without_gun_{i}.png" for i in range(4)]
 
-        self.nameTag = self.myfont.render(f"Player {self.playerID}",False,(255,0,0))
-        self.nameTag = pygame.transform.scale(self.nameTag,(int(self.width+self.width*0.5),self.height//2))
-
-        self.crntAsset = self.idleNG
-    
     def getlsP(self,I = None):
         # Create the correct list pointers depending on which level
         # of the wagon the CB is on
@@ -100,21 +111,25 @@ class Cowboy():
         right : bool
         -indicates which direction to tilt if goProne = True
         """
-        # Straightens self (upright)
         if(goProne):
+            # Goes prone
             self.prone = 1
             self.angle = -90 if right else 90
-            self.resize(self.screenW,self.screenH,scale = self.scale)
+            self.assetPaths = [f"./Assets/Cowboy/Cowboy4_shoot_0.png"]
+            self._resize(self.screenW,self.screenH)
             
-        else: #person Straightenen up
-            self.prone = 0
-            self.resize(self.screenW,self.screenH,scale = self.scale)
             self._trainP.wagons[self.wagonI].placeCB(self.top)
-            text = f"Player {self.playerID} straightenen themselves up instead"
+
+        else: 
+            # Person straightens up
+            self.prone = 0
+            self._resetAP()
+            self._resize(self.screenW,self.screenH)
+
+            text = f"Player {self.playerID} straightenen up instead"
             self._gameP.displayGameText(text = text, time = 120)
 
-        self.crntAsset = self.idleNG
-        self._trainP.wagons[self.wagonI].placeCB(self.top)  
+            self._trainP.wagons[self.wagonI].placeCB(self.top)  
 
     def jump(self):
         # Checks if prone, and straightens if self is prone
@@ -188,9 +203,9 @@ class Cowboy():
             self.changeProne(goProne = False)
             return
         # Shoot animation
-        self.crntAsset = self.shootAsset
+        self.assetPaths = [f"./Assets/Cowboy/Cowboy4_shoot_{i}" for i in range(4)]
         self._gameP.waitLoop(80)
-        self.crntAsset = self.idleNG
+        self.resetAP()
 
         hit = False # To indicate whether someone was hit
         delta = -1

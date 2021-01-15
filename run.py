@@ -1,7 +1,7 @@
 from game import Game
 
 def main():
-    game = Game(single=False)
+    game = Game(single=True)
     game.start()
 
 if __name__ == "__main__":
