@@ -19,25 +19,19 @@ class Cowboy(GameObject):
         self.scale = 1.0
         self.name = f"Player {self.playerID}"
 
-
-
         # Makes a pointer to self at the place
         # where self is located (initial at the bottom layer)
         self._trainP.wagons[wagonI].amountBot.append(self)
-        self.right = 1
+        self.right = 0 if flip else 1 
 
         self.myfont = pygame.font.SysFont("UBUNTU",100)
         
         self._resize(self.screenW,self.screenH)
-        if(flip):
-            self.turn()
-          
-    def animate(self,screen,msCount):
-        msCount %= len(self.assets)*20
-        i = msCount//20
-        screen.blit(self.assets[i],(self.X,self.Y))
-        screen.blit(self.assetName,(self.assetNameX,self.assetNameY))
+ 
 
+    def animate2(self,screen,msCount):
+        screen.blit(self.assetName,(self.assetNameX,self.assetNameY))
+        
     def flip(self):
         for i in range(len(self.assets)):
             self.assets[i] = pygame.transform.flip(self.assets[i],True,False)
@@ -62,15 +56,15 @@ class Cowboy(GameObject):
         self.assetNameY = self.Y -  int(self.assetNameH*0.5)
 
 
-    def _calcSize(self):
+    def _calcSize(self,scale):
         """
         Calculates the size of the object,
         and stores in class variables
         """
-        self.height = self.screenH//8
+        self.height = int((self.screenH//8)*scale)
         self.width = self.height
         self.assetNameW = int(self.width*1.5)
-        self.assetNameH = int(self.height*0.5)
+        self.assetNameH = int(self.height*0.5)  
 
 
     def _resize2(self,screenW,screenH,scale = 1.0):
@@ -78,6 +72,7 @@ class Cowboy(GameObject):
         Extra resizing
 
         fixes if person if flipped or prone
+
         Creates the surface for the nameTag
         """
         if(not self.right): self.flip()
@@ -86,9 +81,7 @@ class Cowboy(GameObject):
             self.assets = [pygame.transform.rotate(self.assets[0],self.angle)]
         
         assetName = self.myfont.render(self.name,False,(255,0,0))
-        W = int(self.assetNameW*scale)
-        H = int(self.assetNameH*scale)
-        self.assetName = pygame.transform.scale(assetName,(W,H))
+        self.assetName = pygame.transform.scale(assetName,(self.assetNameW,self.assetNameH))
 
     def _resetAP(self):
         self.assetPaths = [f"./Assets/Cowboy/Cowboy4_idle_without_gun_{i}.png" for i in range(4)]
@@ -230,7 +223,7 @@ class Cowboy(GameObject):
                     crntWagon += delta
             else: #self.top = False (at bottom) can only shoot 1 wagon away
                 crntWagon = self.wagonI+delta
-                if(crntWagon < len(self._trainP.wagons) and self._trainP.wagons[crntWagon].amountBot):
+                if(crntWagon >= 0 and crntWagon < len(self._trainP.wagons) and self._trainP.wagons[crntWagon].amountBot):
                     indexToShoot = 0 if self.right else -1
                     shotPlayer = self._trainP.wagons[crntWagon].amountBot[indexToShoot]
                     hit = True

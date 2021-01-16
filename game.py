@@ -25,11 +25,11 @@ class Game():
             self.netinit()
 
         else:
-            self.nPlayers = 5
+            self.nPlayers = 7
             self.id = 1
         assert self.width >= self.height, "Screen not wide enough! Change width in settins.json"
         assert self.nPlayers > 0, "Need at least 1 Player"
-        assert self.nPlayers < 7, "Too many players, I can't count that many"
+        #assert self.nPlayers < 7, "Too many players, I can't count that many"
 
 
         # Variable declarations
@@ -105,7 +105,6 @@ class Game():
         print("deadloop entered")
         self.net.send(data = str(self.id),dataType=2)
         while(True):
-            print("deadloop moddafukka")
             self.waitRecieve()
             self.chooseState = 0
 
@@ -275,7 +274,7 @@ class Game():
 
     def baseDrawWindow(self):
         self.screen.blit(self.bg_surface,(0,0))
-        self.train.animate(self.screen)
+        self.train.animate(self.screen,self.msCount)
         for i in range(len(self.players)):
             self.players[i].animate(self.screen,self.msCount)
     
@@ -335,9 +334,10 @@ class Game():
         
     def resizeWindow(self):
         print("RESIZE CALLED")
-        self.bg_surface = pygame.image.load("./Assets/out.png").convert()
+        self.bg_surface = pygame.image.load("./Assets/desert.png").convert()
         self.bg_surface = pygame.transform.scale(self.bg_surface , (self.width,self.height))
-        self.train.resize(self.width,self.height,scale = self.scale)
+        self.train._resize(self.width,self.height,self.scale)
+
         for i in range(self.nPlayers):
             self.players[i]._resize(self.width,self.height,self.scale)
         

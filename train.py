@@ -1,17 +1,19 @@
 import pygame
 from wagon import Wagon
-
-class Train():
+from baseObject import GameObject
+class Train(GameObject):
     assetP = "./Assets/Train/"
 
     def __init__(self,nWagons,screenW,screenH):
+        setattr(Wagon,"_trainP",self)
         self.headX = 0
         self.headY = 0
         self.size = 0
-        self.head = pygame.image.load(self.assetP+"train.png")
-        self.wagons = [Wagon(col=i%5) for i in range(nWagons)]
+        self.assetPaths = ["./Assets/Train/train.png"]
+        self.assets = []
+        self.wagons = [Wagon(index=i) for i in range(nWagons)]
 
-        self.resize(screenW,screenH)
+        self._resize(screenW,screenH)
 
 
     def assertions(self,playersLeft):
@@ -30,31 +32,19 @@ class Train():
         for i in range(len(self.wagons)):
             self.wagons[i].moveX(change = change)
 
-    def animate(self,screen):
-        #Draws the train head
-        screen.blit(self.head,(self.headX,self.headY),(0,0,self.size,int(self.size-self.size*0.3)))
+    def animate2(self,screen,msCount):
         # Draws all the wagons
         for i in range(len(self.wagons)):
-            self.wagons[i].animate(screen)
+            self.wagons[i].animate(screen,msCount = msCount)
 
+    def _calcSize(self,scale):
+        self.width = int(self.screenW*0.2*scale)
+        self.height = self.width
+        self.X = 0
+        self.Y = self.screenH-self.height
+    
 
-    def resize(self,screenW,screenH,scale=1.0):
-        self.head = pygame.image.load(self.assetP+"train.png")
-        # Wagon Head
-        self.size = int((screenH//3)*scale)
-        self.head = pygame.transform.scale(self.head,(self.size,self.size))
-        self.headY = screenH-self.size
-
-        # First wagon
-        X = int(self.headX+self.size*0.85)
-        Y = int(self.headY-self.headY*0.05)
-        h = int(self.size-self.size*0.08)
-        w = int(self.size + self.size*0.5)
-        self.wagons[0].resize(X,Y,w,h)
-
-
-        #The rest of the wagons
-        for i in range(1,len(self.wagons)):
-            X += w*0.82
-            self.wagons[i].resize(X,Y,w,h)
-        
+    def _resize2(self,screenW,screenH,scale = 1.0):
+        for i in range(len(self.wagons)):
+            self.wagons[i]._resize(self.screenW,screenH,scale = scale)
+              

@@ -1,25 +1,19 @@
 import pygame
-
-class Wagon():
+from baseObject import GameObject 
+class Wagon(GameObject):
     assetP = "./Assets/Train/"
-    def __init__(self,col):
+    def __init__(self,index):
         self.X = 0
         self.Y = 0
         self.width = 0
         self.height = 0
-        self.col = col
+        self.index = index
         self.amountBot = [] # list of cowboy objects
         self.amountTop = [] # list of cowboy objects
-        self.asset = pygame.image.load(self.assetP+f"sprite_traincars{col}.png")
-        self.bottom = self.asset.get_rect()
-        self.top = self.asset.get_rect()
+        self.assets = []
+        self.assetPaths = [f"./Assets/Train/sprite_traincars{index%5}.png"]
 
 
-    def animate(self,screen):
-        screen.blit(self.asset,(self.X,self.Y))
-       # pygame.draw.rect(screen,(255,0,0),self.bottom)
-        #spygame.draw.rect(screen,(0,255,0),self.top)
-        
 
     def placeCB(self,top):
         """
@@ -28,12 +22,11 @@ class Wagon():
 
         returns : None
         """
-        
         if(top):
             numCB = len(self.amountTop)
             if(numCB == 0):
                 return
-            stepSize = self.top.width*1//(numCB+1)
+            stepSize = self.top.width//(numCB+1)
             baseX = self.top.left
             for i in range(numCB):
                 self.amountTop[i].place(x=baseX+(i+1)*stepSize,y=self.top.top)
@@ -41,7 +34,7 @@ class Wagon():
             numCB = len(self.amountBot)
             if(numCB == 0):
                 return
-            stepSize = self.bottom.width*1//(numCB+1)
+            stepSize = self.bottom.width//(numCB+1)
             baseX = self.bottom.left
             for i in range(numCB):
                 self.amountBot[i].place(x=baseX+(i+1)*stepSize,y=self.bottom.top)
@@ -51,20 +44,25 @@ class Wagon():
         self.bottom = pygame.Rect.move(self.bottom,change,0)
         self.top = pygame.Rect.move(self.top,change,0)
 
-
-    def resize(self,X,Y,wagonW,wagonH):
-        self.asset = pygame.image.load(self.assetP+f"sprite_traincars{self.col}.png")
-        self.X = X
-        self.Y = Y
-        self.width = wagonW
-        self.height =wagonH
-        self.asset = pygame.transform.scale(self.asset,(self.width,self.height))
-
-        left , top = self.X+self.width//5 , self.Y + 3.9*self.height//6
-        boxW , boxH = self.width-(1.15*self.width//3) , self.height-9*self.height//10
+    def _calcSize(self,scale):
+        self.height =int(self.screenH*0.25*scale)
+        self.width = int(self.screenW*0.22*scale)
+        self.X = int(self._trainP.X) + (self.index+1)*self.width
+        self.Y = self.screenH-self.height
+        self.boxW = self.width-(1.15*self.width//3)
+        self.boxH = self.height-9*self.height//10
         
-        pygame.Rect.update(self.bottom,(left,top) , (boxW,boxH))
+        self.boxLeft = self.X+self.width//5
+        self.bottomTop = self.Y + 3.9*self.height//6
 
-        left , top = self.X+self.width//5 , self.Y+int(1.1*self.height//8)
-        pygame.Rect.update(self.top,(left,top) , (boxW,boxH))
+        self.topTop = self.Y+int(1.1*self.height//8)
 
+    def animate2(self,screen,msCount):
+        #pygame.draw.rect(screen,(255,0,0),self.bottom)
+        #pygame.draw.rect(screen,(255,0,0),self.top)
+        pass
+
+    def _resize2(self,screenW,screenH,scale=1.0):
+        self.top = pygame.Rect((self.boxLeft,self.topTop) , (self.boxW,self.boxH))
+        self.bottom = pygame.Rect((self.boxLeft,self.bottomTop) , (self.boxW,self.boxH))
+        

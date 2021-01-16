@@ -31,20 +31,27 @@ class GameObject:
         #Calculate the size of the object. Is defined in each independent class
         self.screenW = screenW
         self.screenH = screenH
-        self._calcSize()
-
-        W = int(self.width*scale)
-        H = int(self.height*scale)
+        self._calcSize(scale = scale)
 
         self.assets = []
         for i in range(len(self.assetPaths)):
             surface = pygame.image.load(self.assetPaths[i])
-            self.assets.append(pygame.transform.scale(surface,(W,H)))
+            self.assets.append(pygame.transform.scale(surface,(self.width,self.height)))
         
         # For object specific resizing 
         self._resize2(screenW,screenH,scale = scale)
 
     def _resize2(self):
+        pass
+
+    
+    def animate(self,screen,msCount):
+        msCount %= len(self.assets)*20
+        i = msCount//20
+        screen.blit(self.assets[i],(self.X,self.Y))
+        self.animate2(screen = screen,msCount = msCount)
+
+    def animate2(self,screen,msCount):
         pass
 
         

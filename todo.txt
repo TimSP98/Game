@@ -5,3 +5,4 @@ baseObject stuff:
 - calcSize for each object, defines self.height, self.width
 - self.assetPath for each object
 - self._resize2
+- scale in _calcSize
